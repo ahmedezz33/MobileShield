@@ -25,6 +25,8 @@ data class VoiceEvent(
     val detail: String,
     /** True when the screen was locked: the user was probably not using the phone. */
     val locked: Boolean,
+    /** App responsible, when known, so it can be stopped. */
+    val pkg: String? = null,
 )
 
 /**
@@ -74,7 +76,7 @@ object VoiceMonitor {
         val ctx = appContext ?: return
         if (alert) {
             val text = e.detail + if (e.locked) tr("\nحدث هذا والشاشة مقفلة.", "\nThis happened while the screen was locked.") else ""
-            Notifier.alert(ctx, 40 + e.kind.ordinal, e.title, text)
+            Notifier.alert(ctx, 40 + e.kind.ordinal, e.title, text, e.pkg)
         }
     }
 
@@ -209,9 +211,14 @@ object VoiceMonitor {
             }
             for (c in started) {
                 val source = sourceName(c.clientAudioSource)
-                val who = if (c.clientAudioSource == SAMSUNG_BARGEIN_SOURCE && apps.isNullOrEmpty()) {
-                    "Samsung SE Agent (com.samsung.android.ese)"
-                } else who
+                val samsungAgent = c.clientAudioSource == SAMSUNG_BARGEIN_SOURCE && apps.isNullOrEmpty()
+                val who = if (samsungAgent) "Samsung SE Agent (com.samsung.android.ese)" else who
+                val pkg = when {
+                    samsungAgent -> "com.samsung.android.ese"
+                    !apps.isNullOrEmpty() -> apps.first()
+                    apps == null -> Foreground.pkg(ctx)
+                    else -> null
+                }
                 val hotword = c.clientAudioSource == HOTWORD_SOURCE
                 val inCall = callState != TelephonyManager.CALL_STATE_IDLE
                 val silenced = c.isClientSilenced
@@ -223,6 +230,7 @@ object VoiceMonitor {
                             (if (inCall) tr(" · أثناء مكالمة", " · during a call") else "") +
                             (if (silenced) tr(" · كتمه النظام (لا يصل صوت)", " · silenced by the system (no audio)") else ""),
                         NetState.locked,
+                        pkg,
                     ),
                     // wake-word listening is constant and expected; everything else is reported
                     alert = !hotword,
@@ -302,6 +310,7 @@ object VoiceMonitor {
             VoiceEvent(
                 System.currentTimeMillis(), VoiceKind.CAM_ON, tr("الكاميرا تعمل الآن", "Camera in use"),
                 tr("التطبيق: $who\nالكاميرا: ${facing(ctx, id)}", "App: $who\nCamera: ${facing(ctx, id)}"), NetState.locked,
+                if (!apps.isNullOrEmpty()) apps.first() else if (apps == null) Foreground.pkg(ctx) else null,
             ),
             alert = true,
         )

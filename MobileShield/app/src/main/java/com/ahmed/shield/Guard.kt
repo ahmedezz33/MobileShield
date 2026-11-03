@@ -18,7 +18,8 @@ import android.provider.Settings
 object Notifier {
     private const val CHANNEL = "alerts"
 
-    fun alert(ctx: Context, id: Int, title: String, text: String) {
+    /** [pkg]: the app responsible, to offer a one-tap way to stop it. */
+    fun alert(ctx: Context, id: Int, title: String, text: String, pkg: String? = null) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL, tr("تنبيهات الحماية", "Protection alerts"), NotificationManager.IMPORTANCE_DEFAULT)
@@ -26,18 +27,32 @@ object Notifier {
         val open = PendingIntent.getActivity(
             ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE
         )
-        nm.notify(
-            id,
-            Notification.Builder(ctx, CHANNEL)
-                .setSmallIcon(R.drawable.ic_shield)
-                .setContentTitle(title)
-                .setContentText(text)
-                .setStyle(Notification.BigTextStyle().bigText(text))
-                .setContentIntent(open)
-                .setAutoCancel(true)
-                .build()
-        )
+        val builder = Notification.Builder(ctx, CHANNEL)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(text))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+        if (pkg != null) {
+            val stop = PendingIntent.getActivity(
+                ctx, pkg.hashCode(), appPage(pkg),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            builder.addAction(
+                Notification.Action.Builder(
+                    android.graphics.drawable.Icon.createWithResource(ctx, R.drawable.ic_shield),
+                    tr("إيقاف التطبيق", "Stop the app"), stop,
+                ).build()
+            )
+        }
+        nm.notify(id, builder.build())
     }
+
+    /** The system page of an app: Force stop, Disable, Permissions. */
+    fun appPage(pkg: String): Intent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$pkg"))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 }
 
 /**

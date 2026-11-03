@@ -185,6 +185,12 @@ private fun VoiceSection() {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                e.pkg?.let { pkg ->
+                    val ctx = LocalContext.current
+                    OutlinedButton(onClick = { ctx.startActivity(com.ahmed.shield.Notifier.appPage(pkg)) }) {
+                        Text(tr("إيقاف التطبيق", "Stop the app"))
+                    }
+                }
             }
             HorizontalDivider()
         }
