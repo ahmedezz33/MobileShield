@@ -33,7 +33,7 @@ powershell -ExecutionPolicy Bypass -File MobileShield/build-apk.ps1
 GPL-3.0 — see [LICENSE](LICENSE).
 
 The packet engine in `MobileShield/app/src/main/cpp/netguard/` is from
-[NetGuard](https://github.com/M66B/NetGuard), Copyright © 2015–2024 Marcel Bokhorst,
+[NetGuard](https://github.com/M66B/NetGuard), Copyright © 2015–2026 Marcel Bokhorst,
 licensed under GPLv3, with modifications: JNI bindings renamed, the app uid passed to the
 DNS callbacks, uid lookup through ConnectivityManager for TLS server names, and per-domain
 sinkhole answers for blocked names.
