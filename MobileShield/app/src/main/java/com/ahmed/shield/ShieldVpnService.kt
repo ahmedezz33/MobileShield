@@ -382,7 +382,13 @@ class ShieldVpnService : VpnService() {
         val ourDns = packet.dport == 53 && packet.daddr in dnsServers
         if (!sni && !(ourDns && packet.allowed)) {
             // ICMP and some system traffic carry no owner
-            val (label, pkg) = if (packet.uid < 0) tr("غير محدد", "Unidentified") to null else AppNames.label(packet.uid)
+            val (label, pkg) = when {
+                packet.uid >= 0 -> AppNames.label(packet.uid)
+                // router solicitations, multicast group reports: sent by the kernel, never leave the LAN
+                packet.daddr?.let { IpUtil.isLocal(it) } == true ->
+                    tr("نظام الشبكة (رسائل محلية)", "Network system (local messages)") to null
+                else -> tr("غير محدد", "Unidentified") to null
+            }
             val domain = packet.daddr?.let { DnsMap.name(it) }
             if (domain != null && packet.uid >= 0 && packet.allowed) {
                 LogStore.attribute(domain, packet.uid, label, pkg, System.currentTimeMillis())
