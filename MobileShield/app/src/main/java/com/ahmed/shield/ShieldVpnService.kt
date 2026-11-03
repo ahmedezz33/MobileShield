@@ -335,6 +335,7 @@ class ShieldVpnService : VpnService() {
         lastSni = null
         val verdict = when {
             Prefs.blockDoh.value && Blocklist.isDoh(name) -> Verdict.BLOCKED_BYPASS
+            Prefs.blockTelemetry.value && Blocklist.isTelemetry(name) -> Verdict.BLOCKED_AD
             Prefs.adBlock.value && !Blocklist.isAllowed(name) && Blocklist.isBlocked(name) -> Verdict.BLOCKED_AD
             else -> Verdict.ALLOWED
         }

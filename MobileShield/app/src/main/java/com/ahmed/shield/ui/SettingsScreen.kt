@@ -330,6 +330,7 @@ private fun DirectIpCard() {
 private fun AdBlockCard() {
     val scope = rememberCoroutineScope()
     val adBlock by Prefs.adBlock.collectAsState()
+    val telemetry by Prefs.blockTelemetry.collectAsState()
     val lists by Prefs.enabledLists.collectAsState()
     val count by Blocklist.count.collectAsState()
     val status by Blocklist.status.collectAsState()
@@ -339,6 +340,20 @@ private fun AdBlockCard() {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(tr("حجب الإعلانات والمتتبعات", "Block ads and trackers"), Modifier.weight(1f))
             Switch(checked = adBlock, onCheckedChange = { Prefs.setAdBlock(it) })
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(tr("حظر بيانات الاستخدام (Telemetry)", "Block usage data (telemetry)"))
+                Text(
+                    tr(
+                        "يمنع إرسال بيانات استخدامك إلى Microsoft (Copilot وLink to Windows وغيرها) دون تعطيل التطبيقات.",
+                        "Stops usage data being sent to Microsoft (Copilot, Link to Windows and others) without breaking the apps.",
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = telemetry, onCheckedChange = { Prefs.setBlockTelemetry(it) })
         }
         Text(tr("عدد النطاقات في القوائم: $count", "Domains in the lists: $count"), style = MaterialTheme.typography.bodySmall)
         Blocklist.SOURCES.forEach { s ->

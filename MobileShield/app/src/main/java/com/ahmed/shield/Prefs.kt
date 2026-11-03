@@ -39,6 +39,7 @@ object Prefs {
     val allowedGens = MutableStateFlow(setOf(2, 3, 4, 5))
     val adBlock = MutableStateFlow(true)
     val blockDoh = MutableStateFlow(true)
+    val blockTelemetry = MutableStateFlow(true)
     val directMode = MutableStateFlow(DIRECT_LEARN)
     val upstream = MutableStateFlow(UPSTREAMS[0])
     val enabledLists = MutableStateFlow<Set<String>>(emptySet())
@@ -55,6 +56,7 @@ object Prefs {
         allowedGens.value = settings.getStringSet("gens", null)?.mapNotNull { it.toIntOrNull() }?.toSet()
             ?: setOf(2, 3, 4, 5)
         blockDoh.value = settings.getBoolean("doh", true)
+        blockTelemetry.value = settings.getBoolean("telemetry", true)
         directMode.value = settings.getInt("direct", DIRECT_LEARN)
         val up = settings.getString("upstream", null)
         upstream.value = UPSTREAMS.firstOrNull { it.primary == up } ?: UPSTREAMS[0]
@@ -111,6 +113,11 @@ object Prefs {
     fun setBlockDoh(on: Boolean) {
         blockDoh.value = on
         settings.edit().putBoolean("doh", on).apply()
+    }
+
+    fun setBlockTelemetry(on: Boolean) {
+        blockTelemetry.value = on
+        settings.edit().putBoolean("telemetry", on).apply()
     }
 
     fun setDirectMode(mode: Int) {

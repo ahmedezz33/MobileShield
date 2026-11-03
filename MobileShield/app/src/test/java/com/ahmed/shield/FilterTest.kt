@@ -72,6 +72,14 @@ class FilterTest {
     }
 
     @Test
+    fun detectsTelemetryButNotTheApps() {
+        assertTrue(Blocklist.isTelemetry("mobile.events.data.microsoft.com"))
+        assertTrue(Blocklist.isTelemetry("mobile.pipe.aria.microsoft.com"))
+        assertFalse(Blocklist.isTelemetry("copilot.microsoft.com"))
+        assertFalse(Blocklist.isTelemetry("login.microsoftonline.com"))
+    }
+
+    @Test
     fun verdictBlockedFlag() {
         assertFalse(Verdict.ALLOWED.blocked)
         assertFalse(Verdict.DIRECT_SEEN.blocked)

@@ -72,6 +72,18 @@ object Blocklist {
 
     fun isDoh(domain: String): Boolean = matches(domain, DOH_HOSTS)
 
+    /**
+     * Usage-data (telemetry) endpoints. Only collection hosts are listed, so the apps
+     * themselves (Copilot, Link to Windows, ...) keep working.
+     */
+    private val TELEMETRY_HOSTS = setOf(
+        "events.data.microsoft.com", "pipe.aria.microsoft.com", "vortex.data.microsoft.com",
+        "telemetry.microsoft.com", "watson.microsoft.com", "data.microsoft.com.akadns.net",
+        "browser.events.data.msn.com",
+    )
+
+    fun isTelemetry(domain: String): Boolean = matches(domain, TELEMETRY_HOSTS)
+
     /** True if the domain or any parent domain is in the set. */
     private fun matches(domain: String, set: Set<String>): Boolean {
         if (set.isEmpty()) return false
