@@ -57,6 +57,7 @@ powershell -ExecutionPolicy Bypass -File build-apk.ps1 -Install
 | الإجراء | أمر التراجع |
 |---|---|
 | تعطيل `com.samsung.android.ese` | `adb shell pm enable com.samsung.android.ese` |
+| تعطيل تطبيقات Meta المثبّتة مسبقًا: `com.facebook.services` و`com.facebook.system` و`com.facebook.appmanager` (كانت تتصل بـ `graph.facebook.com` دون وجود فيسبوك) | `adb shell pm enable <اسم الحزمة>` لكل واحدة |
 | تعطيل `com.samsung.android.bixby.wakeup` (يعمل بهوية النظام، والتسجيلات انتقلت لاسم `com.samsung.oda.agent` بعد تعطيل ese) | `adb shell pm enable com.samsung.android.bixby.wakeup` |
 | إطفاء «إبقاء الشاشة تعمل أثناء العرض» | `adb shell settings put system intelligent_sleep_mode 1`، أو من الإعدادات ← ميزات متقدمة ← الحركات والإيماءات |
 
