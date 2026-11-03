@@ -28,6 +28,11 @@ Kotlin + Jetpack Compose, native engine in C (NDK 26.3, CMake 3.22), `minSdk 29`
 powershell -ExecutionPolicy Bypass -File MobileShield/build-apk.ps1
 ```
 
+## Contact — التواصل
+
+- **Bugs and feature requests / الأخطاء والاقتراحات:** open an [issue](https://github.com/ahmedezz33/MobileShield/issues).
+- **Security vulnerabilities / الثغرات الأمنية:** please report privately through [Report a vulnerability](https://github.com/ahmedezz33/MobileShield/security/advisories/new) — only the maintainer sees it. See [SECURITY.md](SECURITY.md).
+
 ## License
 
 GPL-3.0 — see [LICENSE](LICENSE).
