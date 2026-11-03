@@ -82,6 +82,7 @@ class ShieldVpnService : VpnService() {
     private var lastSni: String? = null
     private var lastHotspot = false
     private var lastStrictDns = false
+    private var ticks = 0
     private lateinit var cm: ConnectivityManager
     private val main = Handler(Looper.getMainLooper())
     private val background = Executors.newSingleThreadExecutor()
@@ -277,6 +278,8 @@ class ShieldVpnService : VpnService() {
     }
 
     private fun tick() {
+        // integrity every minute: verified boot, bootloader, Knox, SELinux, root files
+        if (ticks++ % 3 == 0) Integrity.watch(this)
         alwaysOn.value = isAlwaysOn
         lockdown.value = isLockdownEnabled
 

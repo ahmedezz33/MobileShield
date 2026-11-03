@@ -148,6 +148,22 @@ private fun SecurityChecksCard() {
             style = MaterialTheme.typography.bodySmall,
         )
         state.forEach { (ok, title, detail) -> CheckLine(ok, title, detail, null) }
+        val integrity by produceState(emptyList<com.ahmed.shield.IntegrityCheck>()) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.ahmed.shield.Integrity.check() }
+        }
+        Text(
+            tr("سلامة النظام (يراقبها درع الجوال كل دقيقة وينذرك فورًا عند أي تغيّر):", "System integrity (checked every minute, instant alert on any change):"),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        integrity.forEach { CheckLine(it.ok, it.title, it.value, null) }
+        Text(
+            tr(
+                "حظر رفع الصلاحيات تقوم به سامسونج داخل الجهاز: Knox RKP يحمي النواة من التعديل، وDEFEX يوقف أي عملية تحصل على الروت بطريقة غير مشروعة. هذه البنود تؤكد أنها سليمة.",
+                "Blocking privilege escalation is done by Samsung inside the device: Knox RKP protects the kernel from changes and DEFEX stops any process that gains root illegitimately. These items confirm they are intact.",
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         OutlinedButton(onClick = {
             com.ahmed.shield.Controls.open(ctx, Intent("android.settings.SYSTEM_UPDATE_SETTINGS"))
         }) { Text(tr("تحديث البرنامج", "Software update")) }

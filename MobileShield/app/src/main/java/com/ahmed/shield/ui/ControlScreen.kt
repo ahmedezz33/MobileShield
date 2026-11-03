@@ -195,6 +195,48 @@ fun ControlScreen() {
             }
         }
 
+        SectionCard(tr("منع التحليل التلقائي (مدخل هجمات «بدون نقرة»)", "Stop automatic parsing (the zero-click entry point)")) {
+            Text(
+                tr(
+                    "الهجوم يبدأ عندما يحلّل الجوال ملفًا وصله دون أن تفتحه: صورة أو معاينة رابط أو رسالة وسائط. أغلق هذه المداخل الثلاثة:",
+                    "The attack starts when the phone parses a file you never opened: a picture, a link preview or a media message. Close these three entry points:",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            StepLine(
+                tr("1. Auto Blocker مع Message Guard", "1. Auto Blocker with Message Guard"),
+                tr(
+                    "يفتح صور الرسائل داخل صندوق معزول، فلا تصل الثغرة إلى النظام. الإعدادات ← الأمان والخصوصية ← Auto Blocker.",
+                    "Opens message images inside an isolated box, so the flaw cannot reach the system. Settings → Security and privacy → Auto Blocker.",
+                ),
+            ) { Controls.open(ctx, Intent(Settings.ACTION_SECURITY_SETTINGS)) }
+            Controls.installedWhatsApps(ctx).forEach { (pkg, name) ->
+                StepLine(
+                    tr("2. معاينات الروابط في $name", "2. Link previews in $name"),
+                    tr(
+                        "الإعدادات ← الخصوصية ← متقدم ← «تعطيل معاينات الروابط»: يمنع واتساب من جلب صفحات وصور الروابط تلقائيًا.",
+                        "Settings → Privacy → Advanced → \"Disable link previews\": stops WhatsApp fetching link pages and images automatically.",
+                    ),
+                ) { ctx.packageManager.getLaunchIntentForPackage(pkg)?.let { Controls.open(ctx, it) } }
+            }
+            StepLine(
+                tr("3. التنزيل التلقائي للوسائط", "3. Media auto-download"),
+                tr(
+                    "أوقفه في كل تطبيق من البطاقة التالية، أو امنع خوادم وسائط واتساب كليًا: الملف الذي لا يصل لا يُحلَّل.",
+                    "Turn it off in every app from the next card, or block WhatsApp's media servers entirely: a file that never arrives is never parsed.",
+                ),
+                null,
+            )
+            Text(
+                tr(
+                    "ومن بطاقة الاتصالات أعلاه: أطفئ البلوتوث وNFC وQuick Share عند عدم الحاجة، فهي مداخل أخرى لنفس النوع من الهجمات.",
+                    "And from the connections card above: turn Bluetooth, NFC and Quick Share off when not needed; they are other entry points for the same attacks.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         SectionCard(tr("التنزيل التلقائي للوسائط", "Media auto-download")) {
             Text(
                 tr(
@@ -223,6 +265,17 @@ fun ControlScreen() {
                 waBlocked,
             ) { Controls.setWhatsappMediaBlocked(it) }
         }
+    }
+}
+
+@Composable
+private fun StepLine(title: String, detail: String, onOpen: (() -> Unit)?) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Medium)
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (onOpen != null) TextButton(onClick = onOpen) { Text(tr("فتح", "Open")) }
     }
 }
 
