@@ -1,0 +1,12 @@
+# build outputs and machine-specific files
+MobileShield/.gradle/
+MobileShield/build/
+MobileShield/app/build/
+MobileShield/local.properties
+MobileShield/.idea/
+*.iml
+__pycache__/
+
+# MVT: the tool itself, and the phone's bug report (large, private)
+mvt/venv/
+mvt/bugreport.zip
