@@ -13,3 +13,7 @@ mvt/bugreport.zip
 
 # MVT raw results (large, private details of the phone)
 mvt/results/
+
+# private: phone logs, screenshots and the MVT report stay on this computer
+data/
+mvt/
