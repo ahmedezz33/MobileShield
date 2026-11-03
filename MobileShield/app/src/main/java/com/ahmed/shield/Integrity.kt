@@ -24,20 +24,20 @@ object Integrity {
         ""
     }
 
-    private fun selinux(): String {
-        val viaApi = try {
-            val c = Class.forName("android.os.SELinux")
-            val enabled = c.getMethod("isSELinuxEnabled").invoke(null) as Boolean
-            val enforced = c.getMethod("isSELinuxEnforced").invoke(null) as Boolean
-            if (!enabled) "Disabled" else if (enforced) "Enforcing" else "Permissive"
-        } catch (_: Exception) {
-            null
-        }
-        if (viaApi != null) return viaApi
-        return try {
-            ProcessBuilder("getenforce").start().inputStream.bufferedReader().readText().trim().ifEmpty { "?" }
-        } catch (_: Exception) {
-            "?"
+    /**
+     * Apps cannot query SELinux directly: android.os.SELinux.isSELinuxEnforced() reads
+     * /sys/fs/selinux/enforce, which SELinux itself denies to apps, so it wrongly reports
+     * "not enforced". Instead, the denial is the proof: only an enforcing policy refuses
+     * an app this file; a permissive one lets the read through.
+     */
+    private fun selinux(): String = try {
+        if (File("/sys/fs/selinux/enforce").readText().trim() == "1") "Enforcing" else "Permissive"
+    } catch (e: Exception) {
+        val msg = e.message.orEmpty()
+        when {
+            "EACCES" in msg || "Permission denied" in msg -> "Enforcing"
+            "ENOENT" in msg || "No such file" in msg -> "Disabled"
+            else -> "?"
         }
     }
 
@@ -53,7 +53,8 @@ object Integrity {
             IntegrityCheck("boot", tr("التمهيد الموثَّق", "Verified boot"), boot, boot == "green"),
             IntegrityCheck("lock", tr("قفل محمّل الإقلاع", "Bootloader lock"), locked, locked == "1"),
             IntegrityCheck("knox", tr("مؤشر Knox (الضمان)", "Knox warranty bit"), warranty.ifEmpty { "?" }, warranty == "0" || warranty.isEmpty()),
-            IntegrityCheck("selinux", "SELinux", se, se == "Enforcing" || se == "?"),
+            // new id: the first version stored a wrong "Permissive" baseline
+            IntegrityCheck("selinux2", "SELinux", se, se == "Enforcing" || se == "?"),
             IntegrityCheck("debug", tr("نسخة النظام", "System build"), "$tags / debuggable=$debuggable", tags == "release-keys" && debuggable != "1"),
             IntegrityCheck("su", tr("ملفات الروت", "Root files"), if (su.isEmpty()) tr("لا يوجد", "none") else su.joinToString(), su.isEmpty()),
         )
