@@ -433,11 +433,15 @@ class ShieldVpnService : VpnService() {
             if ((mask and Prefs.BLOCK_LOCKED) != 0 && NetState.locked) return Verdict.BLOCKED_LOCKED
         }
         if (p.dport == 853 && Prefs.blockDoh.value) return Verdict.BLOCKED_BYPASS // DNS over TLS
+        // encrypted DNS opened straight to a resolver's address (e.g. Chrome's automatic secure DNS)
+        if (p.dport == 443 && Prefs.blockDoh.value && daddr in Blocklist.DOH_IPS) return Verdict.BLOCKED_BYPASS
         if (p.dport == 53) {
             return if (daddr in dnsServers) Verdict.ALLOWED else direct(Verdict.BLOCKED_BYPASS, uid)
         }
         if (p.data == "sni") return Verdict.ALLOWED // server name is checked in isDomainBlocked
-        if (daddr in dnsServers || IpUtil.isLocal(daddr) || DnsMap.isKnown(daddr)) return Verdict.ALLOWED
+        // our resolvers are trusted for plain DNS (handled above) and ping only, never for other ports
+        if (daddr in dnsServers && p.protocol != 6 && p.protocol != 17) return Verdict.ALLOWED
+        if (IpUtil.isLocal(daddr) || DnsMap.isKnown(daddr)) return Verdict.ALLOWED
         if (isApp && (mask and Prefs.ALLOW_DIRECT) != 0) return Verdict.ALLOWED
         return direct(Verdict.BLOCKED_DIRECT, uid)
     }

@@ -73,6 +73,19 @@ object Blocklist {
     fun isDoh(domain: String): Boolean = matches(domain, DOH_HOSTS)
 
     /**
+     * Addresses of public resolvers. Browsers (Chrome's "automatic secure DNS") open
+     * encrypted DNS straight to these IPs on 443/853, skipping any name lookup.
+     */
+    val DOH_IPS = setOf(
+        "1.1.1.1", "1.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001",
+        "104.16.248.249", "104.16.249.249", "162.159.36.1", "162.159.46.1",
+        "8.8.8.8", "8.8.4.4", "2001:4860:4860::8888", "2001:4860:4860::8844",
+        "9.9.9.9", "149.112.112.112", "2620:fe::fe", "2620:fe::9",
+        "94.140.14.14", "94.140.15.15", "2a10:50c0::ad1:ff", "2a10:50c0::ad2:ff",
+        "208.67.222.222", "208.67.220.220", "45.90.28.0", "45.90.30.0",
+    )
+
+    /**
      * Usage-data (telemetry) endpoints. Only collection hosts are listed, so the apps
      * themselves (Copilot, Link to Windows, ...) keep working.
      */
