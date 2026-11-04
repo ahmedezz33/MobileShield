@@ -1325,3 +1325,36 @@ ssize_t write_tcp(const struct arguments *args, const struct tcp_session *cur,
 
     return res;
 }
+
+// Answers a refused connection with a reset straight away, without opening any socket:
+// the app gives up immediately instead of waiting for a timeout (pages with many blocked
+// ads otherwise hang), and the blocked server is never contacted.
+void block_tcp(const struct arguments *args,
+               const uint8_t *pkt, size_t length,
+               const uint8_t *payload) {
+    const uint8_t version = (*pkt) >> 4;
+    const struct iphdr *ip4 = (struct iphdr *) pkt;
+    const struct ip6_hdr *ip6 = (struct ip6_hdr *) pkt;
+    const struct tcphdr *tcphdr = (struct tcphdr *) payload;
+    if (tcphdr->rst)
+        return;
+    const uint8_t tcpoptlen = (uint8_t) ((tcphdr->doff - 5) * 4);
+    const uint8_t *data = payload + sizeof(struct tcphdr) + tcpoptlen;
+    const uint16_t datalen = (const uint16_t) (length - (data - pkt));
+
+    struct tcp_session rst;
+    memset(&rst, 0, sizeof(struct tcp_session));
+    rst.version = version;
+    rst.local_seq = ntohl(tcphdr->ack_seq);
+    rst.remote_seq = ntohl(tcphdr->seq) + datalen + (tcphdr->syn || tcphdr->fin ? 1 : 0);
+    if (version == 4) {
+        rst.saddr.ip4 = (__be32) ip4->saddr;
+        rst.daddr.ip4 = (__be32) ip4->daddr;
+    } else {
+        memcpy(&rst.saddr.ip6, &ip6->ip6_src, 16);
+        memcpy(&rst.daddr.ip6, &ip6->ip6_dst, 16);
+    }
+    rst.source = tcphdr->source;
+    rst.dest = tcphdr->dest;
+    write_rst(args, &rst);
+}

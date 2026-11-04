@@ -351,6 +351,8 @@ void handle_ip(const struct arguments *args,
             block_udp(args, pkt, length, payload, uid);
         else if (protocol == IPPROTO_TCP && *server_name != 0 && !allowed)
             handle_tcp(args, pkt, length, payload, uid, allowed, redirect, epoll_fd); // RST
+        else if (protocol == IPPROTO_TCP)
+            block_tcp(args, pkt, length, payload); // refuse at once, nothing leaves the phone
 
         log_android(ANDROID_LOG_WARN, "Address v%d p%d %s/%u syn %d not allowed",
                     version, protocol, dest, dport, syn);
