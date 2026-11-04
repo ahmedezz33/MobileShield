@@ -46,6 +46,14 @@ import com.ahmed.shield.Prefs
 import com.ahmed.shield.Verdict
 import com.ahmed.shield.blocked
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
+import com.ahmed.shield.LogExport
 
 private val FILTERS get() = listOf(tr("الكل", "All"), tr("المحظور", "Blocked"), tr("الإعلانات", "Ads"), tr("IP مباشر", "Direct IP"), "DNS", tr("بيانات الجوال", "Mobile data"), tr("واي فاي", "Wi-Fi"))
 
@@ -66,6 +74,10 @@ fun LogScreen() {
     var filter by rememberSaveable { mutableIntStateOf(0) }
     var query by rememberSaveable { mutableStateOf("") }
     var selected by remember { mutableStateOf<LogEntry?>(null) }
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var saved by remember { mutableStateOf<Pair<Uri, String>?>(null) }
+    var saveNote by remember { mutableStateOf("") }
 
     val shown = remember(entries, filter, query) {
         entries.filter { e ->
@@ -106,7 +118,36 @@ fun LogScreen() {
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
+            TextButton(onClick = {
+                saveNote = tr("جارٍ الحفظ…", "Saving…")
+                scope.launch {
+                    saveNote = try {
+                        val r = withContext(Dispatchers.IO) { LogExport.export(ctx) }
+                        saved = r
+                        tr("حُفظ في ${r.second}", "Saved to ${r.second}")
+                    } catch (e: Exception) {
+                        tr("تعذّر الحفظ: ${e.message}", "Could not save: ${e.message}")
+                    }
+                }
+            }) { Text(tr("حفظ السجلات", "Save logs")) }
+            saved?.let { (uri, _) ->
+                TextButton(onClick = {
+                    val send = Intent(Intent.ACTION_SEND)
+                        .setType("application/zip")
+                        .putExtra(Intent.EXTRA_STREAM, uri)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    ctx.startActivity(Intent.createChooser(send, tr("مشاركة السجلات", "Share logs")))
+                }) { Text(tr("مشاركة", "Share")) }
+            }
             TextButton(onClick = { LogStore.clear() }) { Text(tr("مسح السجل", "Clear log")) }
+        }
+        if (saveNote.isNotEmpty()) {
+            Text(
+                saveNote,
+                Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = Green,
+            )
         }
         if (shown.isEmpty()) {
             Text(
