@@ -25,6 +25,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -278,6 +280,8 @@ private fun PrivacyCard() {
     val ctx = LocalContext.current
     val groups by Privacy.enabled.collectAsState()
     val version by Prefs.rulesVersion.collectAsState()
+    // full block cuts an app off completely, so it is confirmed first
+    var confirm by remember { mutableStateOf<Pair<com.ahmed.shield.PrivacyTarget, List<String>>?>(null) }
     SectionCard(tr("إيقاف الاتصالات حسب الخدمة", "Stop connections per service")) {
         Text(
             tr(
@@ -313,7 +317,7 @@ private fun PrivacyCard() {
             if (installed.isNotEmpty()) {
                 val full = remember(version) { Privacy.fullyBlocked(installed) }
                 SwitchLine(tr("قطع كامل عن الإنترنت", "Full block from the internet"), full) {
-                    Privacy.setFullBlock(installed, it)
+                    if (it) confirm = t to installed else Privacy.setFullBlock(installed, false)
                 }
                 if (t.fullAr.isNotEmpty()) {
                     Text(
@@ -324,6 +328,26 @@ private fun PrivacyCard() {
                 }
             }
         }
+    }
+    confirm?.let { (t, pkgs) ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = { Text(tr("قطع ${t.name} عن الإنترنت؟", "Cut ${t.name} off the internet?")) },
+            text = {
+                Text(
+                    tr(
+                        "${t.fullAr} يمكنك إعادته في أي وقت من هنا أو من تبويب التطبيقات.",
+                        "${t.fullEn} You can restore it any time here or from the Apps tab.",
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { Privacy.setFullBlock(pkgs, true); confirm = null }) {
+                    Text(tr("اقطع", "Cut off"), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(tr("إلغاء", "Cancel")) } },
+        )
     }
 }
 

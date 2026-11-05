@@ -428,8 +428,8 @@ class ShieldVpnService : VpnService() {
         var mask = 0
         if (isApp) {
             for (pkg in AppNames.packagesFor(uid)) mask = mask or Prefs.rule(pkg)
-            if ((mask and Prefs.BLOCK_WIFI) != 0 && net == NetType.WIFI) return Verdict.BLOCKED_FIREWALL
-            if ((mask and Prefs.BLOCK_CELL) != 0 && net == NetType.CELLULAR) return Verdict.BLOCKED_FIREWALL
+            if ((mask and Prefs.BLOCK_WIFI) != 0 && net == NetType.WIFI) return ruleBlocked(uid)
+            if ((mask and Prefs.BLOCK_CELL) != 0 && net == NetType.CELLULAR) return ruleBlocked(uid)
             if ((mask and Prefs.BLOCK_LOCKED) != 0 && NetState.locked) return Verdict.BLOCKED_LOCKED
         }
         if (p.dport == 853 && Prefs.blockDoh.value) return Verdict.BLOCKED_BYPASS // DNS over TLS
@@ -444,6 +444,30 @@ class ShieldVpnService : VpnService() {
         if (IpUtil.isLocal(daddr) || DnsMap.isKnown(daddr)) return Verdict.ALLOWED
         if (isApp && (mask and Prefs.ALLOW_DIRECT) != 0) return Verdict.ALLOWED
         return direct(Verdict.BLOCKED_DIRECT, uid)
+    }
+
+    private val ruleNoticeAt = java.util.concurrent.ConcurrentHashMap<Int, Long>()
+
+    /**
+     * A user rule cut this app off. Say so (at most every 30 minutes per app), so a
+     * forgotten switch does not look like a broken website.
+     */
+    private fun ruleBlocked(uid: Int): Verdict {
+        val now = System.currentTimeMillis()
+        val last = ruleNoticeAt[uid] ?: 0L
+        if (now - last > 30 * 60_000) {
+            ruleNoticeAt[uid] = now
+            val (label, pkg) = AppNames.label(uid)
+            Notifier.alert(
+                this, 70 + (uid % 1000),
+                tr("حُظر $label من الإنترنت", "$label is blocked from the internet"),
+                tr(
+                    "درع الجوال يمنع $label بسبب قاعدة حظر وضعتها. لإعادته: التطبيقات ← $label ← أيقونة الواي فاي أو البيانات، أو التحكم ← «قطع كامل».",
+                    "MobileShield blocks $label because of a rule you set. To restore it: Apps → $label → the Wi-Fi or data icon, or Control → \"Full block\".",
+                ),
+            )
+        }
+        return Verdict.BLOCKED_FIREWALL
     }
 
     private fun direct(blocked: Verdict, uid: Int): Verdict = when (Prefs.directMode.value) {
