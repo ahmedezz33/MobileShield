@@ -154,7 +154,7 @@ object Records {
 
 /** Every notification shown on the phone from the moment notification access was granted. */
 object NotificationLog {
-    private const val MAX = 2000
+    private const val MAX = 5000
     private val rows = ArrayDeque<NotificationRow>()
     private var file: File? = null
 
@@ -162,8 +162,15 @@ object NotificationLog {
         val f = File(ctx.filesDir, "notifications.tsv")
         file = f
         if (!f.exists()) return
+        // keep 7 days on disk
+        val cutoff = System.currentTimeMillis() - LogDisk.DAYS * 86_400_000L
+        val kept = f.readLines().filter { (it.substringBefore('\t').toLongOrNull() ?: 0) >= cutoff }
+        try {
+            f.writeText(kept.joinToString("") { it + "\n" })
+        } catch (_: Exception) {
+        }
         synchronized(rows) {
-            f.readLines().takeLast(MAX).forEach { line ->
+            kept.takeLast(MAX).forEach { line ->
                 val p = line.split('\t')
                 if (p.size == 4) rows.addFirst(NotificationRow(p[0].toLongOrNull() ?: 0, p[1], p[2], p[3]))
             }
@@ -192,6 +199,16 @@ object NotificationLog {
     private fun String.clean() = replace('\t', ' ').replace('\n', ' ')
 
     fun snapshot(): List<NotificationRow> = synchronized(rows) { rows.toList() }
+
+    /** Everything kept on disk (the last 7 days), newest first. */
+    fun allSaved(): List<NotificationRow> = try {
+        file?.readLines().orEmpty().mapNotNull { line ->
+            val p = line.split('\t')
+            if (p.size == 4) NotificationRow(p[0].toLongOrNull() ?: 0, p[1], p[2], p[3]) else null
+        }.asReversed()
+    } catch (_: Exception) {
+        snapshot()
+    }
 
     fun clear() {
         synchronized(rows) { rows.clear() }

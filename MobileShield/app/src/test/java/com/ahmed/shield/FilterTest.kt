@@ -80,6 +80,28 @@ class FilterTest {
     }
 
     @Test
+    fun savedLogLinesRoundTrip() {
+        val p = LogDisk.parse("1793800000000,10123,\"WhatsApp, Business\",com.whatsapp.w4b,TCP,\"a\"\"b\",443,,ALLOWED,WIFI")
+        assertEquals(10, p.size)
+        assertEquals("WhatsApp, Business", p[2])
+        assertEquals("a\"b", p[5])
+        assertEquals("", p[7])
+        assertEquals("WIFI", p[9])
+    }
+
+    @Test
+    fun privacyGroupsMatchOnlyWhenEnabled() {
+        Privacy.enabled.value = setOf("microsoft", "claude_telemetry")
+        assertEquals("microsoft", Privacy.blockingGroup("mobile.pipe.aria.microsoft.com"))
+        assertEquals("claude_telemetry", Privacy.blockingGroup("browser-intake-us5-datadoghq.com"))
+        assertNull(Privacy.blockingGroup("claude.ai"))
+        assertNull(Privacy.blockingGroup("samsung-auth.edge.hiyaapi.com")) // hiya group is off
+        Privacy.enabled.value = setOf("hiya")
+        assertEquals("hiya", Privacy.blockingGroup("samsung-auth.edge.hiyaapi.com"))
+        Privacy.enabled.value = emptySet()
+    }
+
+    @Test
     fun verdictBlockedFlag() {
         assertFalse(Verdict.ALLOWED.blocked)
         assertFalse(Verdict.DIRECT_SEEN.blocked)

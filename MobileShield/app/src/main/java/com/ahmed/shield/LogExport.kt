@@ -66,13 +66,23 @@ object LogExport {
                 for (e in log) append(row(time(e.time), e.app, e.pkg, e.uid, e.kind, e.target, e.port.takeIf { it > 0 }, e.domain, e.verdict, e.net))
             })
 
-            val voice = VoiceMonitor.snapshot()
+            // the full 7-day history, one file per day
+            for (date in LogDisk.days().sorted()) {
+                entry("history/connections-$date.csv", StringBuilder().apply {
+                    append(row("time", "app", "package", "uid", "kind", "target", "port", "domain", "result", "network"))
+                    for (e in LogDisk.readConnections(date, Int.MAX_VALUE).asReversed()) {
+                        append(row(time(e.time), e.app, e.pkg, e.uid, e.kind, e.target, e.port.takeIf { it > 0 }, e.domain, e.verdict, e.net))
+                    }
+                })
+            }
+
+            val voice = LogDisk.readVoice(Int.MAX_VALUE).ifEmpty { VoiceMonitor.snapshot() }
             entry("mic_camera_calls.csv", StringBuilder().apply {
                 append(row("time", "event", "title", "detail", "screen_locked", "package"))
                 for (e in voice) append(row(time(e.time), e.kind, e.title, e.detail.replace('\n', ' '), e.locked, e.pkg))
             })
 
-            val notes = NotificationLog.snapshot()
+            val notes = NotificationLog.allSaved()
             entry("notifications.csv", StringBuilder().apply {
                 append(row("time", "app", "title", "text"))
                 for (n in notes) append(row(time(n.time), n.app, n.title, n.text))
@@ -102,7 +112,8 @@ object LogExport {
                 append("mic/camera/call events: ${voice.size}\r\n")
                 append("notifications: ${notes.size}\r\n")
                 if (log.isNotEmpty()) append("log covers: ${time(log.last().time)} → ${time(log.first().time)}\r\n")
-                append("\r\nThe connection log keeps the latest 4000 events in memory; save regularly to keep a longer history.\r\n")
+                append("history days: ${LogDisk.days().sorted().joinToString()}\r\n")
+                append("\r\nconnections.csv = the live log (latest 4000 events); history/ = the full last 7 days, one file per day.\r\n")
             })
         }
     }

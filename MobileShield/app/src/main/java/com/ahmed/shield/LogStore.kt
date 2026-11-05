@@ -49,6 +49,7 @@ object LogStore {
     val directByUid = ConcurrentHashMap<Int, AtomicInteger>()
 
     fun add(e: LogEntry) {
+        LogDisk.add(e)
         synchronized(buf) {
             buf.addFirst(e)
             if (buf.size > MAX) buf.removeLast()

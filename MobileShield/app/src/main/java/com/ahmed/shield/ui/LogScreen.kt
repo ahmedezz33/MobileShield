@@ -65,10 +65,19 @@ private val LogEntry.isDirect
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogScreen() {
-    val entries by produceState(LogStore.snapshot()) {
-        while (true) {
-            delay(1000)
-            value = LogStore.snapshot()
+    // null = live log; otherwise one of the last 7 saved days
+    var day by rememberSaveable { mutableStateOf<String?>(null) }
+    val days = remember { com.ahmed.shield.LogDisk.days() }
+    val entries by produceState(LogStore.snapshot(), day) {
+        val d = day
+        if (d == null) {
+            while (true) {
+                value = LogStore.snapshot()
+                delay(1000)
+            }
+        } else {
+            value = emptyList()
+            value = withContext(Dispatchers.IO) { com.ahmed.shield.LogDisk.readConnections(d) }
         }
     }
     var filter by rememberSaveable { mutableIntStateOf(0) }
@@ -140,6 +149,12 @@ fun LogScreen() {
                 }) { Text(tr("مشاركة", "Share")) }
             }
             TextButton(onClick = { LogStore.clear() }) { Text(tr("مسح السجل", "Clear log")) }
+        }
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp)) {
+            FilterChip(day == null, { day = null }, { Text(tr("الآن (مباشر)", "Live")) }, Modifier.padding(horizontal = 4.dp))
+            days.forEach { d ->
+                FilterChip(day == d, { day = d }, { Text(d.substring(5).replace('-', '/')) }, Modifier.padding(horizontal = 4.dp))
+            }
         }
         if (saveNote.isNotEmpty()) {
             Text(

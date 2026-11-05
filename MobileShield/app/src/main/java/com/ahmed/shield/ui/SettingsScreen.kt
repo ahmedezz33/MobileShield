@@ -330,7 +330,9 @@ private fun DirectIpCard() {
 private fun AdBlockCard() {
     val scope = rememberCoroutineScope()
     val adBlock by Prefs.adBlock.collectAsState()
-    val telemetry by Prefs.blockTelemetry.collectAsState()
+    val groups by com.ahmed.shield.Privacy.enabled.collectAsState()
+    val telemetry = "microsoft" in groups
+    val ctx = LocalContext.current
     val lists by Prefs.enabledLists.collectAsState()
     val count by Blocklist.count.collectAsState()
     val status by Blocklist.status.collectAsState()
@@ -353,7 +355,7 @@ private fun AdBlockCard() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Switch(checked = telemetry, onCheckedChange = { Prefs.setBlockTelemetry(it) })
+            Switch(checked = telemetry, onCheckedChange = { com.ahmed.shield.Privacy.setGroup(ctx, "microsoft", it) })
         }
         Text(tr("عدد النطاقات في القوائم: $count", "Domains in the lists: $count"), style = MaterialTheme.typography.bodySmall)
         Blocklist.SOURCES.forEach { s ->

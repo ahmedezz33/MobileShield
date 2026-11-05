@@ -36,7 +36,7 @@ data class VoiceEvent(
  */
 object VoiceMonitor {
     private const val TAG = "VoiceMonitor"
-    private const val MAX = 500
+    private const val MAX = 5000
     private const val HOTWORD_SOURCE = 1999 // MediaRecorder.AudioSource.HOTWORD, a system API
 
     // Samsung's own source "SEC_BARGEIN_DRIVING", used by com.samsung.android.ese (SamsungSeAgent);
@@ -72,6 +72,7 @@ object VoiceMonitor {
             events.addFirst(e)
             if (events.size > MAX) events.removeLast()
         }
+        LogDisk.add(e)
         version.value++
         val ctx = appContext ?: return
         if (alert) {
@@ -81,6 +82,9 @@ object VoiceMonitor {
     }
 
     fun start(ctx: Context) {
+        // bring back the last 7 days after a restart of the app
+        synchronized(events) { if (events.isEmpty()) events.addAll(LogDisk.readVoice(MAX)) }
+        version.value++
         val app = ctx.applicationContext
         appContext = app
         startCalls(app)

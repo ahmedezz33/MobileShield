@@ -34,6 +34,8 @@ import com.ahmed.shield.Controls
 import com.ahmed.shield.NetState
 import com.ahmed.shield.PermApp
 import com.ahmed.shield.Prefs
+import com.ahmed.shield.Privacy
+import androidx.compose.material3.HorizontalDivider
 import com.ahmed.shield.tr
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -195,6 +197,8 @@ fun ControlScreen() {
             }
         }
 
+        PrivacyCard()
+
         SectionCard(tr("منع التحليل التلقائي (مدخل هجمات «بدون نقرة»)", "Stop automatic parsing (the zero-click entry point)")) {
             Text(
                 tr(
@@ -264,6 +268,61 @@ fun ControlScreen() {
                 ),
                 waBlocked,
             ) { Controls.setWhatsappMediaBlocked(it) }
+        }
+    }
+}
+
+/** Per-service switches: block only the usage data, or cut the whole app off. */
+@Composable
+private fun PrivacyCard() {
+    val ctx = LocalContext.current
+    val groups by Privacy.enabled.collectAsState()
+    val version by Prefs.rulesVersion.collectAsState()
+    SectionCard(tr("إيقاف الاتصالات حسب الخدمة", "Stop connections per service")) {
+        Text(
+            tr(
+                "«بيانات الاستخدام» يحجب خوادم جمع البيانات فقط، والخدمة تبقى تعمل. «قطع كامل» يمنع التطبيق من الإنترنت تمامًا.",
+                "\"Usage data\" blocks only the data-collection servers; the service keeps working. \"Full block\" cuts the app off the internet completely.",
+            ),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Privacy.TARGETS.forEach { t ->
+            val installed = remember(t.id) {
+                t.packages.filter {
+                    try {
+                        ctx.packageManager.getApplicationInfo(it, 0)
+                        true
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
+            }
+            if (t.group == null && installed.isEmpty()) return@forEach
+            HorizontalDivider()
+            Text(t.name, fontWeight = FontWeight.Bold)
+            Text(
+                tr(t.whyAr, t.whyEn),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            t.group?.let { g ->
+                SwitchLine(tr("حظر بيانات الاستخدام", "Block usage data"), g in groups) {
+                    Privacy.setGroup(ctx, g, it)
+                }
+            }
+            if (installed.isNotEmpty()) {
+                val full = remember(version) { Privacy.fullyBlocked(installed) }
+                SwitchLine(tr("قطع كامل عن الإنترنت", "Full block from the internet"), full) {
+                    Privacy.setFullBlock(installed, it)
+                }
+                if (t.fullAr.isNotEmpty()) {
+                    Text(
+                        tr("عند القطع الكامل: ${t.fullAr}", "With full block: ${t.fullEn}"),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
         }
     }
 }

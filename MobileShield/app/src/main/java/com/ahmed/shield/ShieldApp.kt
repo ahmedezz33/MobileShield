@@ -7,8 +7,10 @@ class ShieldApp : Application() {
         super.onCreate()
         Lang.init(this)
         Prefs.init(this)
+        Privacy.init(this)
         AppNames.init(this)
         Blocklist.init(this)
+        LogDisk.init(this)
         NotificationLog.init(this)
     }
 }
