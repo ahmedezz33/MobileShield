@@ -334,6 +334,8 @@ class ShieldVpnService : VpnService() {
         val tls = lastSni == name
         lastSni = null
         val verdict = when {
+            Spyware.domainSet(name)?.also { Spyware.alertContact(this, name, it, AppNames.label(uid).first) } != null ->
+                Verdict.BLOCKED_SPYWARE
             Prefs.blockDoh.value && Blocklist.isDoh(name) -> Verdict.BLOCKED_BYPASS
             Privacy.blockingGroup(name) != null -> Verdict.BLOCKED_AD
             Prefs.adBlock.value && !Blocklist.isAllowed(name) && Blocklist.isBlocked(name) -> Verdict.BLOCKED_AD
@@ -418,6 +420,11 @@ class ShieldVpnService : VpnService() {
     private fun decide(p: Packet): Verdict {
         val uid = p.uid
         val daddr = p.daddr ?: return Verdict.ALLOWED
+        // known spyware infrastructure is refused for every app, before any other rule
+        Spyware.ipSet(daddr)?.let {
+            Spyware.alertContact(this, daddr, it, AppNames.label(uid).first)
+            return Verdict.BLOCKED_SPYWARE
+        }
         // network-wide switches apply to every app, the system included
         val net = NetState.type
         if (net == NetType.WIFI && Prefs.killWifi.value) return Verdict.BLOCKED_FIREWALL

@@ -80,6 +80,7 @@ fun SettingsScreen() {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        SpywareCard()
         SecurityChecksCard()
         HardeningCard()
         DirectIpCard()
@@ -449,5 +450,96 @@ private fun DomainLine(domain: String, onRemove: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(domain, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
         IconButton(onClick = onRemove) { Icon(Icons.Filled.Delete, contentDescription = tr("حذف", "Delete")) }
+    }
+}
+
+/** On-device check against the public spyware indicators that MVT uses. */
+@Composable
+private fun SpywareCard() {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val count by com.ahmed.shield.Spyware.count.collectAsState()
+    val sets by com.ahmed.shield.Spyware.sets.collectAsState()
+    val updated by com.ahmed.shield.Spyware.updatedAt.collectAsState()
+    val busy by com.ahmed.shield.Spyware.busy.collectAsState()
+    val status by com.ahmed.shield.Spyware.status.collectAsState()
+    val progress by com.ahmed.shield.Spyware.progress.collectAsState()
+    val report by com.ahmed.shield.Spyware.report.collectAsState()
+    val date = java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.US)
+
+    SectionCard(tr("فحص برامج التجسس (مؤشرات MVT)", "Spyware scan (MVT indicators)")) {
+        Text(
+            tr(
+                "يقارن الجوال بالمؤشرات العامة لبرامج التجسس المعروفة، وهي نفس مصادر أداة MVT من منظمة العفو الدولية: Pegasus وPredator وCandiru وQuaDream وCellebrite وبرامج المراقبة وغيرها. يفحص التطبيقات المثبّتة وتواقيعها، وبصمة ملفاتها، وسجل الاتصالات لآخر 7 أيام، وملفات النظام وخصائصه.",
+                "Compares the phone with the public indicators of known spyware, the same sources as Amnesty's MVT: Pegasus, Predator, Candiru, QuaDream, Cellebrite, stalkerware and more. It checks installed apps and their signatures, their file hashes, the last 7 days of connections, and system files and properties.",
+            ),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Text(
+            if (count == 0) tr("المؤشرات لم تُنزَّل بعد.", "Indicators not downloaded yet.")
+            else tr(
+                "$count مؤشر من $sets مجموعة · آخر تحديث ${date.format(java.util.Date(updated))}",
+                "$count indicators from $sets sets · updated ${date.format(java.util.Date(updated))}",
+            ),
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+        )
+        if (count > 0) {
+            Text(
+                tr("🛡️ الحماية المباشرة تعمل: أي اتصال بخادم من هذه القوائم يُحظر فورًا وتصلك تنبيه.", "🛡️ Live protection on: any contact with a server on these lists is blocked at once and you are alerted."),
+                style = MaterialTheme.typography.bodySmall,
+                color = Green,
+            )
+        }
+        Row {
+            OutlinedButton(enabled = !busy, onClick = { scope.launch { com.ahmed.shield.Spyware.update() } }) {
+                Text(tr("تحديث المؤشرات", "Update indicators"))
+            }
+            Spacer(Modifier.width(8.dp))
+            Button(enabled = !busy && count > 0, onClick = { scope.launch { com.ahmed.shield.Spyware.scan(ctx) } }) {
+                Text(tr("افحص الآن", "Scan now"))
+            }
+        }
+        if (busy) {
+            if (progress > 0f) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+            else LinearProgressIndicator(Modifier.fillMaxWidth())
+        }
+        if (status.isNotEmpty()) Text(status, style = MaterialTheme.typography.bodySmall)
+        report?.let { r ->
+            if (r.findings.isEmpty()) {
+                CheckLine(
+                    true, tr("لا يوجد أي تطابق", "No matches"),
+                    tr(
+                        "${date.format(java.util.Date(r.time))} · ${r.apps} تطبيق، ${r.apkHashed} ملف، ${r.domainsChecked} عنوان، مقابل ${r.indicators} مؤشر.",
+                        "${date.format(java.util.Date(r.time))} · ${r.apps} apps, ${r.apkHashed} files, ${r.domainsChecked} addresses, against ${r.indicators} indicators.",
+                    ),
+                    null,
+                )
+            } else {
+                Text(
+                    tr("⚠️ ${r.findings.size} تطابق مع مؤشرات برامج تجسس", "⚠️ ${r.findings.size} matches with spyware indicators"),
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                )
+                r.findings.forEach { f ->
+                    CheckLine(false, "${f.type}: ${f.value}", "${f.set} · ${f.detail}", null)
+                }
+                Text(
+                    tr(
+                        "التطابق لا يعني اختراقًا مؤكدًا، لكنه يستحق التحقق: افصل الإنترنت، وانقل بياناتك المهمة، واطلب فحصًا متخصصًا مجانيًا من Access Now Helpline أو Amnesty Security Lab.",
+                        "A match is not proof of infection, but it needs checking: disconnect from the internet, move your important data, and ask for a free expert check from Access Now Helpline or Amnesty Security Lab.",
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+        Text(
+            tr(
+                "الحدود: أندرويد يمنع التطبيقات من رؤية العمليات الجارية، فهذا البند يحتاج فحص MVT الكامل من الكمبيوتر. ونتيجة «لا تطابق» تعني عدم وجود برنامج معروف، ولا تنفي وجود برنامج جديد.",
+                "Limits: Android hides running processes from apps, so that item needs the full MVT check from a computer. \"No matches\" means no known spyware; it cannot rule out a new one.",
+            ),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

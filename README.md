@@ -21,7 +21,7 @@
 | **المراقبة** | تنبيه فوري باسم أي تطبيق يشغّل **المايكروفون أو الكاميرا**، مع زر «إيقاف التطبيق». ويعرض أيضًا المكالمات (ومنها VoLTE)، والرسائل، واستهلاك البيانات، وسجل الاستخدام، وسجل الإشعارات، وأبراج الاتصال |
 | **التحكم** | قطع الإنترنت كليًا، والسماح بالبيانات حسب الجيل (2G وحتى 5G)، وإيقاف الاتصالات **حسب الخدمة** (Microsoft وGoogle وسامسونج وغيرها) بخيارين: حظر بيانات الاستخدام فقط، أو قطع كامل بعد التأكيد |
 | **الملفات** | **الإتلاف** النهائي للملفات والمصغّرات وسلة المحذوفات والمساحة الفارغة، و**التنظيف العميق** للكاش وبقايا التطبيقات المحذوفة، و**الاسترجاع** من سلة المحذوفات والمصغّرات ونسخ تطبيقات المراسلة |
-| **الإعدادات** | **فحص سلامة النظام كل دقيقة** (التمهيد الموثَّق وقفل الإقلاع وKnox وSELinux وملفات الروت)، وحجب الإعلانات، والحماية من هجمات «بدون نقرة»، واختيار خادم DNS |
+| **الإعدادات** | **فحص برامج التجسس** على الجوال نفسه بمؤشرات MVT العامة (Pegasus وPredator وCandiru وغيرها): التطبيقات وتواقيعها وبصمة ملفاتها وسجل الاتصالات، مع **حظر فوري** لأي اتصال بخوادمها. و**فحص سلامة النظام كل دقيقة** (التمهيد الموثَّق وقفل الإقلاع وKnox وSELinux وملفات الروت)، وحجب الإعلانات، والحماية من هجمات «بدون نقرة»، واختيار خادم DNS |
 
 ### ما يحجبه
 - **الإعلانات والمتتبعات** بقوائم AdGuard وStevenBlack وPeter Lowe، مع معرفة **التطبيق الدقيق** الذي طلب كل إعلان.
@@ -64,6 +64,7 @@ Arabic and English interface. Every connection passes through a local VPN on the
 - **Anti-bypass** — direct-to-IP connections (learn or block mode), DNS-over-HTTPS/TLS blocking, Private DNS locked off.
 - **Monitoring** — instant alerts naming the app whenever the microphone or camera turns on, calls (incl. VoLTE / Wi-Fi calling), SMS, data usage, hotspot, cell towers, usage history, last sensitive-permission access, notification log, system log.
 - **7-day history** with per-day browsing and a *Save logs* export (ZIP of CSV files).
+- **On-device spyware scan** — the public MVT indicators (Pegasus, Predator, Candiru, QuaDream, Cellebrite, stalkerware…) checked against installed apps, signing certificates, APK hashes and 7 days of connections; known spyware servers are blocked live with an alert.
 - **Integrity watchdog** — verified boot, bootloader lock, Knox warranty bit, SELinux and root files checked every minute.
 - **Files** — shredder, deep clean and recovery.
 

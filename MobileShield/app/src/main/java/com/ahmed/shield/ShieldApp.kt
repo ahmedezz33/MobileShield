@@ -11,6 +11,7 @@ class ShieldApp : Application() {
         AppNames.init(this)
         Blocklist.init(this)
         LogDisk.init(this)
+        Spyware.init(this)
         NotificationLog.init(this)
     }
 }

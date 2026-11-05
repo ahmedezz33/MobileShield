@@ -74,6 +74,7 @@ fun verdictName(v: Verdict): String = when (v) {
     Verdict.BLOCKED_LOCKED -> tr("قفل الشاشة", "Screen locked")
     Verdict.BLOCKED_DIRECT -> tr("IP مباشر", "Direct IP")
     Verdict.BLOCKED_BYPASS -> tr("تجاوز DNS", "DNS bypass")
+    Verdict.BLOCKED_SPYWARE -> tr("⚠️ تجسس", "⚠️ Spyware")
 }
 
 fun verdictColor(v: Verdict): Color = when (v) {
@@ -84,6 +85,7 @@ fun verdictColor(v: Verdict): Color = when (v) {
     Verdict.BLOCKED_LOCKED -> Color(0xFF6A1B9A)
     Verdict.BLOCKED_DIRECT -> Color(0xFFAD1457)
     Verdict.BLOCKED_BYPASS -> Color(0xFF4E342E)
+    Verdict.BLOCKED_SPYWARE -> Color(0xFFB71C1C)
 }
 
 fun kindName(k: Kind): String = when (k) {

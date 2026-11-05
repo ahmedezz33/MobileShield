@@ -12,6 +12,7 @@ enum class Verdict {
     BLOCKED_LOCKED,
     BLOCKED_DIRECT,
     BLOCKED_BYPASS, // encrypted or foreign DNS that would skip our filter
+    BLOCKED_SPYWARE, // listed in the public spyware indicators
 }
 
 val Verdict.blocked: Boolean get() = this != Verdict.ALLOWED && this != Verdict.DIRECT_SEEN
@@ -58,7 +59,7 @@ object LogStore {
         when (e.verdict) {
             Verdict.BLOCKED_AD -> blockedAds.incrementAndGet()
             Verdict.BLOCKED_FIREWALL, Verdict.BLOCKED_LOCKED -> blockedFirewall.incrementAndGet()
-            Verdict.BLOCKED_DIRECT, Verdict.BLOCKED_BYPASS -> blockedDirect.incrementAndGet()
+            Verdict.BLOCKED_DIRECT, Verdict.BLOCKED_BYPASS, Verdict.BLOCKED_SPYWARE -> blockedDirect.incrementAndGet()
             Verdict.ALLOWED, Verdict.DIRECT_SEEN -> {}
         }
     }

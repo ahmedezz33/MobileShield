@@ -102,6 +102,47 @@ class FilterTest {
     }
 
     @Test
+    fun parsesMvtIndexAndStix() {
+        val yaml = """
+indicators:
+  -
+    type: github
+    name: Predator Spyware Indicators of Compromise
+    sources:
+      - Meta
+    github:
+      owner: mvt-project
+      repo: mvt-indicators
+      branch: main
+      path: intellexa_predator/predator.stix2
+  -
+    type: download
+    name: Other
+    download_url: https://example.org/other.stix2
+""".trimIndent()
+        val idx = Spyware.parseIndex(yaml)
+        assertEquals(2, idx.size)
+        assertEquals("https://raw.githubusercontent.com/mvt-project/mvt-indicators/main/intellexa_predator/predator.stix2", idx[0].second)
+        assertEquals("Predator Spyware Indicators of Compromise", idx[0].first)
+        assertEquals("https://example.org/other.stix2", idx[1].second)
+
+        val stix = """{"objects":[
+          {"type":"indicator","pattern":"[domain-name:value = 'Bad.Example.COM']"},
+          {"type":"indicator","pattern":"[app:id = 'com.spy.App']"},
+          {"type":"indicator","pattern":"[file:hashes.sha256 = 'ABCDEF']"},
+          {"type":"indicator","pattern":"[ipv4-addr:value = '203.0.113.9']"},
+          {"type":"indicator","pattern":"[email-addr:value = 'x@y.z']"}]}"""
+        val lines = Spyware.parseStix(stix, "Predator")
+        assertEquals(4, lines.size)
+        Spyware.load(lines)
+        assertEquals("Predator", Spyware.domainSet("cdn.bad.example.com"))
+        assertEquals("Predator", Spyware.ipSet("203.0.113.9"))
+        assertNull(Spyware.domainSet("example.com"))
+        assertTrue(lines.contains("app\tcom.spy.App\tPredator")) // package names keep their case
+        Spyware.load(emptyList())
+    }
+
+    @Test
     fun verdictBlockedFlag() {
         assertFalse(Verdict.ALLOWED.blocked)
         assertFalse(Verdict.DIRECT_SEEN.blocked)

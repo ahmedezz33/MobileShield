@@ -16,6 +16,29 @@ class ExportReceiver : BroadcastReceiver() {
         val pending = goAsync()
         thread(name = "export") {
             try {
+                if (intent.getStringExtra("do") == "scan") {
+                    // adb shell am broadcast -n com.ahmed.shield/.ExportReceiver --es do scan
+                    // A scan takes minutes, longer than a broadcast may run: start it detached
+                    // and report the result in logcat under the tag "ShieldScan".
+                    val app = context.applicationContext
+                    thread(name = "spyware-scan") {
+                        val text = try {
+                            val r = kotlinx.coroutines.runBlocking {
+                                if (Spyware.count.value == 0) Spyware.update()
+                                Spyware.scan(app)
+                            }
+                            "indicators=${r.indicators} apps=${r.apps} apk_hashed=${r.apkHashed} " +
+                                "addresses=${r.domainsChecked} findings=${r.findings.size} " +
+                                r.findings.joinToString("; ") { "${it.type}:${it.value}[${it.set}]" }
+                        } catch (e: Exception) {
+                            "failed: $e"
+                        }
+                        android.util.Log.i("ShieldScan", "RESULT $text")
+                    }
+                    pending.resultCode = 1
+                    pending.resultData = "scan started"
+                    return@thread
+                }
                 val (_, path) = LogExport.export(context.applicationContext)
                 pending.resultCode = 1
                 pending.resultData = path
