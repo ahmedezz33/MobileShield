@@ -39,6 +39,7 @@ object Prefs {
     val allowedGens = MutableStateFlow(setOf(2, 3, 4, 5))
     val adBlock = MutableStateFlow(true)
     val blockDoh = MutableStateFlow(true)
+    val wifiCalling = MutableStateFlow(true)
     val blockTelemetry = MutableStateFlow(true)
     val directMode = MutableStateFlow(DIRECT_LEARN)
     val upstream = MutableStateFlow(UPSTREAMS[0])
@@ -56,6 +57,7 @@ object Prefs {
         allowedGens.value = settings.getStringSet("gens", null)?.mapNotNull { it.toIntOrNull() }?.toSet()
             ?: setOf(2, 3, 4, 5)
         blockDoh.value = settings.getBoolean("doh", true)
+        wifiCalling.value = settings.getBoolean("wfc", true)
         blockTelemetry.value = settings.getBoolean("telemetry", true)
         directMode.value = settings.getInt("direct", DIRECT_LEARN)
         val up = settings.getString("upstream", null)
@@ -113,6 +115,12 @@ object Prefs {
     fun setBlockDoh(on: Boolean) {
         blockDoh.value = on
         settings.edit().putBoolean("doh", on).apply()
+    }
+
+    fun setWifiCalling(on: Boolean) {
+        wifiCalling.value = on
+        settings.edit().putBoolean("wfc", on).apply()
+        rulesVersion.value++
     }
 
     fun setBlockTelemetry(on: Boolean) {

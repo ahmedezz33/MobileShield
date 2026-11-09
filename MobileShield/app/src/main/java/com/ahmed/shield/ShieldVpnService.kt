@@ -182,7 +182,8 @@ class ShieldVpnService : VpnService() {
         // Wi-Fi Calling and VoLTE run an IPsec (ESP) tunnel to the carrier, which the
         // engine cannot forward (it handles TCP, UDP and ICMP only). The call stack is
         // system telephony, not an app that browses, so it goes around the tunnel.
-        for (pkg in TELEPHONY_PACKAGES) {
+        WifiCallingGuard.apply(this)
+        if (Prefs.wifiCalling.value) for (pkg in TELEPHONY_PACKAGES) {
             try {
                 builder.addDisallowedApplication(pkg)
             } catch (_: PackageManager.NameNotFoundException) {

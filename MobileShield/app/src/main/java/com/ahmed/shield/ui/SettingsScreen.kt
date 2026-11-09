@@ -302,6 +302,28 @@ private fun DirectIpCard() {
             Text(tr("حظر DNS المشفّر (DoH وDoT) الذي يتجاوز الفلتر", "Block encrypted DNS (DoH and DoT) that bypasses the filter"), Modifier.weight(1f))
             Switch(checked = blockDoh, onCheckedChange = { Prefs.setBlockDoh(it) })
         }
+        val wfc by Prefs.wifiCalling.collectAsState()
+        val wfcCtx = androidx.compose.ui.platform.LocalContext.current
+        var restartNeeded by remember { mutableStateOf(false) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(tr("السماح بالاتصال عبر الواي فاي (Wi-Fi Calling)", "Allow Wi-Fi Calling"), Modifier.weight(1f))
+            Switch(checked = wfc, onCheckedChange = {
+                Prefs.setWifiCalling(it)
+                restartNeeded = com.ahmed.shield.WifiCallingGuard.apply(wfcCtx)
+                if (ShieldVpnService.running.value) {
+                    wfcCtx.startService(
+                        android.content.Intent(wfcCtx, ShieldVpnService::class.java).setAction(ShieldVpnService.ACTION_RELOAD)
+                    )
+                }
+            })
+        }
+        Text(
+            tr(
+                "يمر نظام الاتصالات (حساب النظام) مباشرة إلى شركة الاتصالات دون فلترة، لأن نفق المكالمات المشفّر لا يعمل عبر الدرع.",
+                "System telephony (the system account) goes straight to the carrier without filtering, because the encrypted call tunnel cannot pass through the shield.",
+            ) + if (restartNeeded) tr(" أعد تشغيل الجوال مرة واحدة ليسري التغيير.", " Restart the phone once for this to take effect.") else "",
+            style = MaterialTheme.typography.bodySmall,
+        )
         if (seen.isNotEmpty()) {
             Text(tr("تطبيقات اتصلت مباشرة منذ التشغيل:", "Apps that connected directly since start:"), style = MaterialTheme.typography.titleSmall)
             seen.take(15).forEach { (uid, count) ->
