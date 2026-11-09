@@ -143,6 +143,15 @@ indicators:
     }
 
     @Test
+    fun pagesKeepWhatTheyNeedToShow() {
+        assertTrue(Blocklist.isAllowed("cdn.cookielaw.org"))
+        assertTrue(Blocklist.isAllowed("assets-jpcust.jwpsrv.com"))
+        assertTrue(Blocklist.isAllowed("t.co"))
+        assertFalse(Blocklist.isAllowed("googleads.g.doubleclick.net"))
+        assertFalse(Blocklist.isAllowed("tpc.googlesyndication.com"))
+    }
+
+    @Test
     fun verdictBlockedFlag() {
         assertFalse(Verdict.ALLOWED.blocked)
         assertFalse(Verdict.DIRECT_SEEN.blocked)

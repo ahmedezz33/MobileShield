@@ -54,7 +54,22 @@ object Blocklist {
     fun isBlocked(domain: String): Boolean =
         matches(domain, Prefs.customBlocked.value) || matches(domain, domains)
 
-    fun isAllowed(domain: String): Boolean = matches(domain, Prefs.allowed.value)
+    fun isAllowed(domain: String): Boolean =
+        matches(domain, Prefs.allowed.value) || matches(domain, SITE_NEEDS)
+
+    /**
+     * Names the ad lists carry but that pages need to show anything: cookie-consent
+     * dialogs that keep the page hidden until they load, A/B "anti-flicker" scripts,
+     * video players and news sites' own content APIs. Found in the log of news sites
+     * that stayed blank.
+     */
+    val SITE_NEEDS = setOf(
+        "cdn.cookielaw.org", "geolocation.onetrust.com", "cookie-cdn.cookiepro.com",
+        "fundingchoicesmessages.google.com", "consent.cookiebot.com", "cdn.privacy-mgmt.com",
+        "cdn.optimizely.com", "t.co",
+        "registry.api.cnn.io", "lightning.cnn.com",
+        "entitlements.jwplayer.com", "jwpsrv.com", "cdn.jwplayer.com", "jwpcdn.com", "jwplatform.com",
+    )
 
     /** Public DNS-over-HTTPS resolvers that apps use to skip the system DNS. */
     private val DOH_HOSTS = setOf(
