@@ -69,6 +69,7 @@ object Blocklist {
         "cdn.optimizely.com", "t.co",
         "registry.api.cnn.io", "lightning.cnn.com",
         "entitlements.jwplayer.com", "jwpsrv.com", "cdn.jwplayer.com", "jwpcdn.com", "jwplatform.com",
+        "licensing.bitmovin.com",
     )
 
     /** Public DNS-over-HTTPS resolvers that apps use to skip the system DNS. */
