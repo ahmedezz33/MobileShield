@@ -50,6 +50,12 @@ class ShieldVpnService : VpnService() {
         private const val CHANNEL = "shield"
         private const val NOTIFICATION_ID = 1
 
+        /** Carrier call services (IMS, ePDG for Wi-Fi Calling) on Samsung and AOSP phones. */
+        val TELEPHONY_PACKAGES = listOf(
+            "com.android.phone", "com.sec.epdg", "com.sec.imsservice", "com.samsung.android.ims",
+            "com.android.ims.rcsservice", "com.google.android.ims", "com.sec.unifiedwfc",
+        )
+
         val running = MutableStateFlow(false)
         val alwaysOn = MutableStateFlow(false)
         val lockdown = MutableStateFlow(false)
@@ -172,6 +178,15 @@ class ShieldVpnService : VpnService() {
             // our own sockets (list downloads) must not loop back into the tunnel
             builder.addDisallowedApplication(packageName)
         } catch (_: PackageManager.NameNotFoundException) {
+        }
+        // Wi-Fi Calling and VoLTE run an IPsec (ESP) tunnel to the carrier, which the
+        // engine cannot forward (it handles TCP, UDP and ICMP only). The call stack is
+        // system telephony, not an app that browses, so it goes around the tunnel.
+        for (pkg in TELEPHONY_PACKAGES) {
+            try {
+                builder.addDisallowedApplication(pkg)
+            } catch (_: PackageManager.NameNotFoundException) {
+            }
         }
         val pfd = try {
             builder.establish()
@@ -485,8 +500,27 @@ class ShieldVpnService : VpnService() {
         }
         else -> {
             LogStore.noteDirect(uid)
+            noticeDirect(uid)
             blocked
         }
+    }
+
+    /** Says when "block direct IP" stops an app, so a site that will not load is explained. */
+    private fun noticeDirect(uid: Int) {
+        if (uid < 0 || uid % 100_000 < Process.FIRST_APPLICATION_UID) return
+        val key = -uid // separate throttle from rule notices
+        val now = System.currentTimeMillis()
+        if (now - (ruleNoticeAt[key] ?: 0L) < 30 * 60_000) return
+        ruleNoticeAt[key] = now
+        val label = AppNames.label(uid).first
+        Notifier.alert(
+            this, 75 + (uid % 1000),
+            tr("حُظر اتصال مباشر من $label", "A direct connection from $label was blocked"),
+            tr(
+                "وضع «الاتصال المباشر» على «حظر» منع $label من الاتصال بعنوان لم يُطلب عبر DNS. إن تعطّل شيء: استثنِ $label (أيقونة 🌐 في التطبيقات) أو اجعل الوضع «تعلّم» من الإعدادات.",
+                "\"Direct connection\" mode is set to Block and stopped $label from reaching an address it never looked up. If something broke: exempt $label (🌐 icon in Apps) or set the mode to Learn in Settings.",
+            ),
+        )
     }
 
     private fun isKeyguardLocked(): Boolean =
