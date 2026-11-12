@@ -16,6 +16,23 @@ class ExportReceiver : BroadcastReceiver() {
         val pending = goAsync()
         thread(name = "export") {
             try {
+                if (intent.getStringExtra("do") == "rules") {
+                    // adb shell am broadcast -n com.ahmed.shield/.ExportReceiver --es do rules --es set "pkg=3,pkg2=4"
+                    // mask: 1 Wi-Fi, 2 mobile, 4 while locked, 8 allow direct IP; 0 clears. No "set" lists the rules.
+                    val set = intent.getStringExtra("set").orEmpty()
+                    for (item in set.split(',').map { it.trim() }.filter { '=' in it }) {
+                        val (pkg, mask) = item.split('=', limit = 2)
+                        mask.trim().toIntOrNull()?.let { Prefs.setRule(pkg.trim(), it) }
+                    }
+                    val pm = context.packageManager
+                    pending.resultCode = 1
+                    pending.resultData = Prefs.allRules().entries.sortedBy { it.key }.joinToString(";") { (p, m) ->
+                        val uid = try { pm.getApplicationInfo(p, 0).uid } catch (_: Exception) { -1 }
+                        val shared = if (uid > 0) pm.getPackagesForUid(uid)?.filter { it != p }.orEmpty() else emptyList()
+                        "$p=$m" + if (shared.isNotEmpty()) " (uid shared: ${shared.joinToString("/")})" else ""
+                    }
+                    return@thread
+                }
                 if (intent.getStringExtra("do") == "location") {
                     // adb shell am broadcast -n com.ahmed.shield/.ExportReceiver --es do location --es lock on|off
                     val on = intent.getStringExtra("lock") != "off"

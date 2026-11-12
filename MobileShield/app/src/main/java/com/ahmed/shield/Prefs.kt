@@ -70,6 +70,8 @@ object Prefs {
 
     fun rule(pkg: String): Int = ruleCache[pkg] ?: 0
 
+    fun allRules(): Map<String, Int> = HashMap(ruleCache)
+
     fun anyLockRule(): Boolean = ruleCache.values.any { (it and BLOCK_LOCKED) != 0 }
 
     fun setRule(pkg: String, mask: Int) {
