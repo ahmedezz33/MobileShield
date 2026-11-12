@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ahmed.shield.AppNames
 import com.ahmed.shield.Controls
 import com.ahmed.shield.NetState
 import com.ahmed.shield.PermApp
@@ -330,6 +331,18 @@ private fun PrivacyCard() {
         }
     }
     confirm?.let { (t, pkgs) ->
+        // Apps signed together can share one Linux uid (Word, Excel and PowerPoint do);
+        // the firewall works per uid, so cutting one cuts them all.
+        val sharing = remember(pkgs) {
+            val pm = ctx.packageManager
+            pkgs.flatMap { p ->
+                try {
+                    pm.getPackagesForUid(pm.getApplicationInfo(p, 0).uid)?.toList().orEmpty()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            }.distinct().filter { it !in pkgs }.map { AppNames.labelOf(it) }
+        }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirm = null },
             title = { Text(tr("قطع ${t.name} عن الإنترنت؟", "Cut ${t.name} off the internet?")) },
@@ -338,6 +351,9 @@ private fun PrivacyCard() {
                     tr(
                         "${t.fullAr} يمكنك إعادته في أي وقت من هنا أو من تبويب التطبيقات.",
                         "${t.fullEn} You can restore it any time here or from the Apps tab.",
+                    ) + if (sharing.isEmpty()) "" else tr(
+                        "\n\n⚠ سيُقطع معه أيضًا: ${sharing.joinToString("، ")}، لأنها تشترك معه في الهوية نفسها داخل أندرويد.",
+                        "\n\n⚠ This also cuts: ${sharing.joinToString(", ")}, because they share the same Android identity.",
                     )
                 )
             },
