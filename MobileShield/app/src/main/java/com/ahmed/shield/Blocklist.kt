@@ -74,6 +74,7 @@ object Blocklist {
         // the recent-files list ("Fetching your files") and settings roaming, same range
         "recent.svc.cloud.microsoft" to "52.109.16.4",
         "roaming.svc.cloud.microsoft" to "52.109.0.140",
+        "mrodevicemgr.officeapps.live.com" to "52.109.4.7",
     )
 
     val SITE_NEEDS = setOf(

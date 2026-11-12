@@ -160,8 +160,12 @@ void parse_dns_response(const struct arguments *args, const struct ng_session *s
         int32_t addr_off[32];
         uint16_t addr_type[32];
         int naddr = 0;
+        // the question name or any name in its CNAME chain may need redirecting
+        uint32_t over = (qcount > 0) ? dns_override(args, qname) : 0;
         for (int a = 0; a < acount; a++) {
             off = get_qname(data, *datalen, (uint16_t) off, name);
+            if (over == 0 && off > 0 && strcmp(name, qname) != 0)
+                over = dns_override(args, name);
             if (off > 0 && off + 10 <= *datalen) {
                 uint16_t qtype = ntohs(*((uint16_t *) (data + off)));
                 uint16_t qclass = ntohs(*((uint16_t *) (data + off + 2)));
@@ -221,16 +225,27 @@ void parse_dns_response(const struct arguments *args, const struct ng_session *s
         }
 
         jboolean blocked = (qcount > 0 && !svcb && is_domain_blocked(args, qname, uid));
-        uint32_t over = (!blocked && naddr > 0) ? dns_override(args, qname) : 0;
-        if (over != 0) {
+        if (blocked || naddr == 0) over = 0;
+        int has_aaaa = 0;
+        for (int i = 0; i < naddr; i++)
+            if (addr_type[i] == DNS_QTYPE_AAAA) has_aaaa = 1;
+        if (over != 0 && !has_aaaa) {
             // a name whose usual servers do not answer on this network: point it at
             // a working address of the same service (Office's odc, for one)
             uint32_t ttl = htonl(60);
             for (int i = 0; i < naddr; i++) {
                 uint8_t *rd = (uint8_t *) data + addr_off[i];
                 memcpy(rd - 6, &ttl, sizeof(ttl));
-                if (addr_type[i] == DNS_QTYPE_A) memcpy(rd, &over, 4);
+                memcpy(rd, &over, 4);
             }
+        }
+        // ...and give it no IPv6 address, so apps use the working IPv4 one
+        if (over != 0 && has_aaaa) {
+            dns->ans_count = 0;
+            dns->auth_count = 0;
+            dns->add_count = 0;
+            *datalen = aoff;
+            return;
         }
         if (blocked && naddr > 0)
             sinkhole_answers((uint8_t *) data, qname, addr_off, addr_type, naddr);
