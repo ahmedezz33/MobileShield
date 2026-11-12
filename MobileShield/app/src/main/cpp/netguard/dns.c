@@ -221,6 +221,17 @@ void parse_dns_response(const struct arguments *args, const struct ng_session *s
         }
 
         jboolean blocked = (qcount > 0 && !svcb && is_domain_blocked(args, qname, uid));
+        uint32_t over = (!blocked && naddr > 0) ? dns_override(args, qname) : 0;
+        if (over != 0) {
+            // a name whose usual servers do not answer on this network: point it at
+            // a working address of the same service (Office's odc, for one)
+            uint32_t ttl = htonl(60);
+            for (int i = 0; i < naddr; i++) {
+                uint8_t *rd = (uint8_t *) data + addr_off[i];
+                memcpy(rd - 6, &ttl, sizeof(ttl));
+                if (addr_type[i] == DNS_QTYPE_A) memcpy(rd, &over, 4);
+            }
+        }
         if (blocked && naddr > 0)
             sinkhole_answers((uint8_t *) data, qname, addr_off, addr_type, naddr);
         else if (qcount > 0 && (svcb || blocked)) {

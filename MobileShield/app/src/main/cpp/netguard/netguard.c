@@ -691,6 +691,25 @@ jboolean is_domain_blocked(const struct arguments *args, const char *name, jint 
     return jallowed;
 }
 
+static jmethodID midDnsOverride = NULL;
+
+// Asks the service for a replacement IPv4 address for a name (network order), 0 for none.
+uint32_t dns_override(const struct arguments *args, const char *name) {
+    jclass clsService = (*args->env)->GetObjectClass(args->env, args->instance);
+    ng_add_alloc(clsService, "clsService");
+    if (midDnsOverride == NULL)
+        midDnsOverride = jniGetMethodID(args->env, clsService, "dnsOverride", "(Ljava/lang/String;)I");
+    jstring jname = (*args->env)->NewStringUTF(args->env, name);
+    ng_add_alloc(jname, "jname");
+    jint ip = (*args->env)->CallIntMethod(args->env, args->instance, midDnsOverride, jname);
+    jniCheckException(args->env);
+    (*args->env)->DeleteLocalRef(args->env, jname);
+    (*args->env)->DeleteLocalRef(args->env, clsService);
+    ng_delete_alloc(jname, __FILE__, __LINE__);
+    ng_delete_alloc(clsService, __FILE__, __LINE__);
+    return htonl((uint32_t) ip);
+}
+
 static jmethodID midGetUidQ = NULL;
 
 jint get_uid_q(const struct arguments *args,

@@ -347,6 +347,15 @@ class ShieldVpnService : VpnService() {
         if (rr.TTL == -1) lastSni = name // TLS server name, isDomainBlocked follows
     }
 
+    /** Called from the engine: a working IPv4 address to answer for [name], packed, or 0. */
+    @Suppress("unused")
+    private fun dnsOverride(name: String): Int {
+        val ip = Blocklist.DNS_OVERRIDES[name.lowercase().trimEnd('.')] ?: return 0
+        DnsMap.put(ip, name)
+        val p = ip.split('.').map { it.toInt() }
+        return (p[0] shl 24) or (p[1] shl 16) or (p[2] shl 8) or p[3]
+    }
+
     @Suppress("unused")
     private fun isDomainBlocked(name: String, uid: Int): Boolean {
         val tls = lastSni == name

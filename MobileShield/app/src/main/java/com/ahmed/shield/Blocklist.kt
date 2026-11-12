@@ -63,6 +63,19 @@ object Blocklist {
      * video players and news sites' own content APIs. Found in the log of news sites
      * that stayed blank.
      */
+    /**
+     * Names whose usual servers do not answer on some networks, mapped to a working server
+     * of the same service. Office's odc (sign-in setup and "Fetching your files") resolves to
+     * 52.110.x.x, which stalls in the TLS handshake from Saudi networks seen in Nov 2026,
+     * while 52.109.4.7 serves the same API.
+     */
+    val DNS_OVERRIDES = mapOf(
+        "odc.officeapps.live.com" to "52.109.4.7",
+        // the recent-files list ("Fetching your files") and settings roaming, same range
+        "recent.svc.cloud.microsoft" to "52.109.16.4",
+        "roaming.svc.cloud.microsoft" to "52.109.0.140",
+    )
+
     val SITE_NEEDS = setOf(
         "cdn.cookielaw.org", "geolocation.onetrust.com", "cookie-cdn.cookiepro.com",
         "fundingchoicesmessages.google.com", "consent.cookiebot.com", "cdn.privacy-mgmt.com",

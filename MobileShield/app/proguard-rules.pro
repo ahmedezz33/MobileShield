@@ -9,6 +9,7 @@
     void logPacket(com.ahmed.shield.engine.Packet);
     void dnsResolved(com.ahmed.shield.engine.ResourceRecord);
     boolean isDomainBlocked(java.lang.String, int);
+    int dnsOverride(java.lang.String);
     int getUidQ(int, int, java.lang.String, int, java.lang.String, int);
     com.ahmed.shield.engine.Allowed isAddressAllowed(com.ahmed.shield.engine.Packet);
     void accountUsage(com.ahmed.shield.engine.Usage);
