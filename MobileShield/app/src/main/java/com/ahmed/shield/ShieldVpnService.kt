@@ -223,6 +223,7 @@ class ShieldVpnService : VpnService() {
         }
         ContextCompat.registerReceiver(this, screenReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
         PrivateDnsGuard.start(this)
+        LocationLock.start(this)
         VoiceMonitor.start(this)
 
         startEngine()
@@ -295,6 +296,7 @@ class ShieldVpnService : VpnService() {
 
     private fun tick() {
         // integrity every minute: verified boot, bootloader, Knox, SELinux, root files
+        if (ticks % 3 == 0) main.post { LocationLock.enforce(this) }
         if (ticks++ % 3 == 0) Integrity.watch(this)
         alwaysOn.value = isAlwaysOn
         lockdown.value = isLockdownEnabled

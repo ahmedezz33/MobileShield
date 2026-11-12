@@ -13,5 +13,6 @@ class ShieldApp : Application() {
         LogDisk.init(this)
         Spyware.init(this)
         NotificationLog.init(this)
+        LocationLock.init(this)
     }
 }

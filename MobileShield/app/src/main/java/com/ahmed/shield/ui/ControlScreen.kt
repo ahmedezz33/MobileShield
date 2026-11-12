@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ahmed.shield.AppNames
 import com.ahmed.shield.Controls
+import com.ahmed.shield.LocationLock
 import com.ahmed.shield.NetState
 import com.ahmed.shield.PermApp
 import com.ahmed.shield.Prefs
@@ -141,6 +142,8 @@ fun ControlScreen() {
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+
+        LocationCard()
 
         SectionCard(tr("المايكروفون والكاميرا", "Microphone and camera")) {
             Text(
@@ -364,6 +367,66 @@ private fun PrivacyCard() {
             },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text(tr("إلغاء", "Cancel")) } },
         )
+    }
+}
+
+@Composable
+private fun LocationCard() {
+    val ctx = LocalContext.current
+    val locked by LocationLock.enabled.collectAsState()
+    val minutes by LocationLock.minutes.collectAsState()
+    val until by LocationLock.until.collectAsState()
+    val on by produceState(false) {
+        while (true) {
+            value = LocationLock.locationOn(ctx)
+            delay(1500)
+        }
+    }
+    SectionCard(tr("الموقع", "Location")) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(tr("الموقع الآن", "Location now"), Modifier.weight(1f))
+            if (on) Badge(tr("يعمل", "On"), MaterialTheme.colorScheme.error) else Badge(tr("مغلق", "Off"), Green)
+        }
+        SwitchLine(tr("إغلاق الموقع دائمًا إلا بطلب مني", "Keep location off unless I ask"), locked) {
+            LocationLock.setEnabled(ctx, it)
+        }
+        Text(
+            tr(
+                "يبقى الموقع مغلقًا، ومعه «بحث الواي فاي والبلوتوث» الذي يكشف مكانك حتى مع إغلاقهما. إذا فتحتَه أنت أو وافقت على طلب تطبيق مثل الخرائط، يبقى مفتوحًا للمدة التي تختارها ثم يُغلق تلقائيًا.",
+                "Location stays off, along with Wi-Fi and Bluetooth scanning, which reveal where you are even with those radios off. If you switch it on, or approve an app's request such as Maps, it stays on for the time you choose and then switches off by itself.",
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (locked) {
+            Text(tr("مدة الفتح عند الطلب:", "How long it stays on when asked:"), style = MaterialTheme.typography.titleSmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                listOf(5, 15, 30, 60).forEach { m ->
+                    androidx.compose.material3.RadioButton(selected = minutes == m, onClick = { LocationLock.setMinutes(ctx, m) })
+                    Text(tr("$m د", "$m min"))
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+            if (on && until > System.currentTimeMillis()) {
+                Text(
+                    tr("مفتوح حتى ${LocationLock.clock(until)}", "On until ${LocationLock.clock(until)}"),
+                    color = MaterialTheme.colorScheme.error,
+                )
+                TextButton(onClick = { LocationLock.closeNow(ctx) }) { Text(tr("أغلقه الآن", "Close it now")) }
+            } else {
+                TextButton(onClick = { LocationLock.allowFor(ctx, minutes) }) {
+                    Text(tr("افتح الموقع $minutes دقيقة", "Turn location on for $minutes minutes"))
+                }
+            }
+            Text(
+                tr(
+                    "مكالمات الطوارئ (911 و112 و999) يرسل فيها أندرويد موقعك للإسعاف حتى والموقع مغلق، وهذا لا يمكن ولا ينبغي منعه.",
+                    "On emergency calls (911, 112, 999) Android sends your location to responders even with location off; that cannot and should not be stopped.",
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

@@ -16,6 +16,16 @@ class ExportReceiver : BroadcastReceiver() {
         val pending = goAsync()
         thread(name = "export") {
             try {
+                if (intent.getStringExtra("do") == "location") {
+                    // adb shell am broadcast -n com.ahmed.shield/.ExportReceiver --es do location --es lock on|off
+                    val on = intent.getStringExtra("lock") != "off"
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        LocationLock.setEnabled(context.applicationContext, on)
+                    }
+                    pending.resultCode = 1
+                    pending.resultData = "location lock ${if (on) "on" else "off"}"
+                    return@thread
+                }
                 if (intent.getStringExtra("do") == "scan") {
                     // adb shell am broadcast -n com.ahmed.shield/.ExportReceiver --es do scan
                     // A scan takes minutes, longer than a broadcast may run: start it detached
